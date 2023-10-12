@@ -31,6 +31,10 @@ function decodeHTML(input) {
 async function getTitle(url) {
     try {
         const response = await fetch(url);
+        // Skip Forbidden, Unauthorized, Found (need login)
+        if (response.status == 403 || response.status == 401 || response.status == 302) {
+            return '';
+        }
         const responseText = await response.text();
         const matches = responseText.match(DEFAULT_REGEX.htmlTitleTag);
         if (matches !== null && matches.length > 1 && matches[2] !== null) {
