@@ -6,6 +6,7 @@ const DEFAULT_REGEX = {
     htmlTitleTag: /<title(\s[^>]+)*>([^<]*)<\/title>/,
     line: /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/gi,
     imageExtension: /\.(gif|jpe?g|tiff?|png|webp|bmp|tga|psd|ai)$/i,
+    signGithub: /Sign in to (.*) · GitHub/gm,
 };
 
 const FORMAT_SETTINGS = {
@@ -31,8 +32,8 @@ function decodeHTML(input) {
 async function getTitle(url) {
     try {
         const response = await fetch(url);
-        // Skip Forbidden, Unauthorized, Found (need login)
-        if (response.status == 403 || response.status == 401 || response.status == 302) {
+        // Skip Forbidden, Unauthorized
+        if (response.status == 403 || response.status == 401) {
             return '';
         }
         const responseText = await response.text();
@@ -49,6 +50,10 @@ async function getTitle(url) {
 
 async function convertUrlToMarkdownLink(url, text, urlStartIndex, offset, applyFormat) {
     const title = await getTitle(url);
+
+    if (isGithubLogin(title)) {
+        return { text, offset };
+    }
     if (title === '') {
         return { text, offset };
     }
@@ -61,6 +66,11 @@ async function convertUrlToMarkdownLink(url, text, urlStartIndex, offset, applyF
         text: `${startSection}${wrappedUrl}${endSection}`,
         offset: urlStartIndex + url.length,
     };
+}
+
+function isGithubLogin(title) {
+    const githubRegex = new RegExp(DEFAULT_REGEX.signGithub);
+    return githubRegex.test(title)
 }
 
 function isImage(url) {
